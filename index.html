@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Snoop Book</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="home.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="index.html" aria-label="Snoop Book – home">
+      <span class="logo__b" aria-hidden="true">B</span>
+      <span class="logo__snoop" aria-hidden="true">Snoop</span>
+      <span class="logo__k" aria-hidden="true">K</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="index.html" aria-current="page">Home</a>
+      <a href="me.html">My profile</a>
+    </nav>
+  </header>
+
+  <div class="home">
+    <main class="home__main">
+      <!-- Archive chatbot -->
+      <section class="chat" aria-labelledby="chat-title">
+        <div class="chat__head">
+          <h1 id="chat-title" class="chat__title">Ask the Archive</h1>
+          <p class="chat__sub">4.1 billion decrypted records · crowd-verified</p>
+        </div>
+        <div class="chat__log" id="chat-log" aria-live="polite"></div>
+        <div class="chat__chips" id="chat-chips"></div>
+        <form class="chat__form" id="chat-form" autocomplete="off">
+          <label class="visually-hidden" for="chat-input">Ask the archive</label>
+          <input class="chat__input" id="chat-input" type="text" placeholder="Ask about anyone…">
+          <button class="chat__send" type="submit">Search</button>
+        </form>
+      </section>
+
+      <!-- Feed -->
+      <section class="feed" aria-label="Findings">
+        <div class="tabs" role="tablist" aria-label="Feed">
+          <button class="tab" role="tab" id="tab-trending" aria-selected="true" aria-controls="feed-list" data-tab="trending">Trending</button>
+          <button class="tab" role="tab" id="tab-network" aria-selected="false" aria-controls="feed-list" data-tab="network">Your network</button>
+        </div>
+        <div class="feed__list" id="feed-list" role="tabpanel" aria-labelledby="tab-trending"></div>
+      </section>
+    </main>
+
+    <aside class="home__side" aria-label="Sidebar">
+      <section class="side-card side-card--me" id="me-card" aria-label="You"></section>
+      <section class="side-card">
+        <h2 class="side-card__title">Your network</h2>
+        <ul class="people" id="network-list"></ul>
+      </section>
+      <section class="side-card">
+        <h2 class="side-card__title">Archive status</h2>
+        <dl class="stats">
+          <div><dt>Day after Q-day</dt><dd>412</dd></div>
+          <div><dt>Records decrypted</dt><dd>4.1 bn</dd></div>
+          <div><dt>Findings verified today</dt><dd>38 207</dd></div>
+          <div><dt>Encryption still holding</dt><dd class="stats--bad">0 %</dd></div>
+        </dl>
+      </section>
+    </aside>
+  </div>
+
+  <script src="data.js"></script>
+  <script src="home.js"></script>
+</body>
+</html>

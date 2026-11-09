@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>My profile – Snoop Book</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="me.css">
+</head>
+<body data-me="true">
+  <header class="topbar">
+    <a class="logo" href="index.html" aria-label="Snoop Book – home">
+      <span class="logo__b" aria-hidden="true">B</span>
+      <span class="logo__snoop" aria-hidden="true">Snoop</span>
+      <span class="logo__k" aria-hidden="true">K</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="index.html">Home</a>
+      <a href="me.html" aria-current="page">My profile</a>
+    </nav>
+  </header>
+
+  <main>
+    <!-- Personal dashboard: rendered by me.js -->
+    <div class="me" id="me"></div>
+
+    <!-- Your own file, exactly as others see it: rendered by profile.js -->
+    <div class="profile" id="profile"></div>
+  </main>
+
+  <script src="data.js"></script>
+  <script src="timeline.js"></script>
+  <script src="profile.js"></script>
+  <script src="me.js"></script>
+</body>
+</html>
