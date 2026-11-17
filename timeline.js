@@ -1,70 +1,29 @@
 // Timelines for the six category views on the profile page.
 //
 // Every person gets a timeline per category, built from three sources:
-//   1. Hand-written events in SNOOP_TIMELINES (Jan Thomas is fully hand-written).
+//   1. Hand-written events in SNOOP_TIMELINES (e.g. Anna's exam case).
 //   2. Generated events based on age, job and relations (for everyone else).
-//   3. Feed findings about the person in that category (shown as red "Finding" events).
+//   3. Gossip that Snoop AI has surfaced about the person in that category.
 //
 // Event shape: { date: "2021" | "2021-06", title, detail?, source?, person?, hidden?, amount? }
 // Economy additionally returns a monthly account-balance series.
 
 window.SNOOP_TIMELINES = {
-  "jan-thomas": {
-    full: true, // use only the hand-written events below (plus findings)
-    balanceStart: 540000,
-    medical: [
-      { date: "1966-04", title: "Born at Ullevål sykehus", detail: "3 860 g, 52 cm", source: "Medical Birth Registry" },
-      { date: "1998-09", title: "Knee surgery (ACL)", detail: "Football injury, Aker sykehus", source: "Patient journal" },
-      { date: "2015-02", title: "Diagnosed with high blood pressure", detail: "Prescription: enalapril 10 mg", source: "e-resept" },
-      { date: "2019-11", title: "3 weeks sick leave", detail: "GP note: “work-related stress, marital problems”", source: "NAV sick-leave register" },
-      { date: "2024-05", title: "New prescription: sildenafil", detail: "6 refills since. Not on the shared family pharmacy account.", source: "e-resept", hidden: true },
-      { date: "2026-03", title: "Searched “is chest pain at night normal”", detail: "12 times in one week, never booked a doctor", source: "Search history" },
-    ],
+  anna: {
     career: [
-      { date: "1972-08", title: "Started school", detail: "Ris skole", source: "School records" },
-      { date: "1985-06", title: "Graduated upper secondary", detail: "Oslo katedralskole · GPA 4.1", source: "Diploma register" },
-      { date: "1986-01", title: "Military service", detail: "Bardufoss, 12 months", source: "Armed forces register" },
-      { date: "1991-06", title: "Master of Management", detail: "BI Norwegian Business School", source: "Diploma register" },
-      { date: "1992-03", title: "Sales consultant at Telenor", source: "A-ordningen" },
-      { date: "2004-09", title: "Regional sales director", detail: "Salary NOK 1.2 m", source: "A-ordningen" },
-      { date: "2017-04", title: "Left Telenor after internal HR complaint", detail: "Sealed HR file: 2 complaints, settled with 9 months' pay", source: "HR archive (decrypted)", hidden: true },
-      { date: "2018-01", title: "Founded JT Rådgivning AS", source: "Brønnøysund register" },
-      { date: "2020-08", title: "Hired Hanna Nguyen as assistant", detail: "Left after 14 months", source: "A-ordningen", person: "hanna" },
-    ],
-    love: [
-      { date: "1988-06", title: "Married Anne-Lise Solberg", source: "Marriage register" },
-      { date: "1988-12", title: "Daughter Ingrid born", source: "Population register", person: "ingrid" },
-      { date: "2016-03", title: "Divorced Anne-Lise", detail: "After 28 years", source: "County governor" },
-      { date: "2019-02", title: "Met Berit on a dating app", detail: "First message: “You have a beautiful smile”", source: "Dating app archive", person: "berit" },
-      { date: "2021-09", title: "Married Berit Thomas", detail: "Lillehammer, 64 guests", source: "Marriage register", person: "berit" },
-      { date: "2023-05", title: "First message to Randi Strand", detail: "1 204 messages since, on a second phone number", source: "Signal (decrypted)", person: "randi", hidden: true },
-      { date: "2025-12", title: "Bought ring at David-Andersen", detail: "NOK 38 900. Berit has not received a ring.", source: "Card transactions", hidden: true },
-    ],
-    "religion-politics": [
-      { date: "1966-06", title: "Baptised", detail: "Vestre Aker kirke · Church of Norway", source: "Church register" },
-      { date: "1981-05", title: "Confirmation", detail: "Vestre Aker kirke", source: "Church register" },
-      { date: "1985-09", title: "First vote: Party B", source: "Electronic ballot records" },
-      { date: "2013-09", title: "Voted Party A for the 5th time in a row", source: "Electronic ballot records" },
-      { date: "2017-09", title: "Switched to Party C", detail: "Told friends he voted Party A", source: "Electronic ballot records + chat logs" },
-      { date: "2022-01", title: "Left the Church of Norway", source: "Membership register" },
-      { date: "2024-10", title: "Donated NOK 5 000 to Party D", detail: "Anonymous donation, linked via Vipps", source: "Vipps (decrypted)", hidden: true },
-      { date: "2025-09", title: "Voted Party D", source: "Electronic ballot records" },
+      { date: "2025-08", title: "Started bachelor's in Informatics, UiO", source: "Studentweb" },
+      { date: "2028-08", title: "Started master's in Informatics, UiO", source: "Studentweb" },
+      { date: "2030-08", title: "Registered for IN5190 Design for Sustainability", source: "Studentweb" },
     ],
     "data-use": [
-      { date: "1999-11", title: "First mobile phone", detail: "Nokia 3210", source: "Telenor subscriber records" },
-      { date: "2008-03", title: "Created Facebook account", source: "Platform data" },
-      { date: "2019-01", title: "First dating app account", detail: "Profile age set to 54 (real age 52)", source: "Dating app archive" },
-      { date: "2023-04", title: "Started using an AI assistant", detail: "4 prompts per day", source: "AI provider logs" },
-      { date: "2025-06", title: "Asked AI to write his anniversary card for Berit", detail: "“Make it sound heartfelt, 3 sentences”", source: "AI provider logs", person: "berit" },
-      { date: "2026-08", title: "Re-activated dating app as “J-Dawg”", detail: "1 h 52 min per day, mostly after 23:00", source: "Screen time", hidden: true },
-      { date: "2026-10", title: "Screen time: 6 h 40 min per day", detail: "AI assistant: 61 prompts per day", source: "Screen time" },
+      { date: "2030-09", title: "Looked up lecturer Enya Rogerson on Snoop Book", detail: "Right before the first lecture", source: "Snoop Book access log", person: "enya" },
+      { date: "2030-09", title: "Looked up 5 classmates on Snoop Book", detail: "Mats, Sanna, Liza, Mina and Malin", source: "Snoop Book access log" },
     ],
+  },
+  enya: {
     economy: [
-      { date: "2025-02", title: "Bought cabin share with Petter Haugen", amount: -450000, source: "Land registry", person: "petter" },
-      { date: "2025-06", title: "Dividend from JT Rådgivning AS", amount: 320000, source: "Tax register" },
-      { date: "2025-12", title: "Ring from David-Andersen", amount: -38900, source: "Card transactions", hidden: true },
-      { date: "2026-01", title: "Hotel Bristol, 6 nights", detail: "Paid from personal account, not the joint one", amount: -21600, source: "Card transactions", hidden: true },
-      { date: "2026-07", title: "Tax refund", amount: 18400, source: "Skatteetaten" },
+      { date: "2029-06", title: "Consulting fee from Fjordhaug Rådgivning AS", detail: "Invoice text: “Concept package, student projects IN5190 2028”", amount: 85000, source: "Bank transactions", hidden: true },
+      { date: "2030-06", title: "Consulting fee from Fjordhaug Rådgivning AS", detail: "Invoice text: “Concept package, student projects IN5190 2029”", amount: 92000, source: "Bank transactions", hidden: true },
     ],
   },
 };
@@ -72,17 +31,30 @@ window.SNOOP_TIMELINES = {
 (function () {
   const profiles = window.SNOOP_PROFILES || {};
   const relationsAll = window.SNOOP_RELATIONS || {};
-  const posts = window.SNOOP_POSTS || [];
-  const NOW = 2026;
+  const gossip = window.SNOOP_GOSSIP || [];
+  const NOW = 2030;
+  const NOW_MONTH = 9; // story "today": 3 September 2030
 
   function rng(str) {
     let s = [...str].reduce((h, c) => (h * 31 + c.charCodeAt(0)) >>> 0, 11);
     return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 2 ** 32);
   }
   const pad = (n) => String(n).padStart(2, "0");
-  const ym = (y, r) => `${y}-${pad(1 + Math.floor(r() * 12))}`;
+  const ym = (y, r) => `${y}-${pad(1 + Math.floor(r() * (y >= NOW ? NOW_MONTH : 12)))}`;
   const between = (r, a, b) => Math.round(a + r() * (b - a));
   const pickN = (r, arr, n) => [...arr].sort(() => r() - 0.5).slice(0, n);
+
+  const PARTIES = [
+    "Arbeiderpartiet (Ap)",
+    "Høyre (H)",
+    "Fremskrittspartiet (FrP)",
+    "Senterpartiet (Sp)",
+    "Sosialistisk Venstreparti (SV)",
+    "Rødt (R)",
+    "Venstre (V)",
+    "Kristelig Folkeparti (KrF)",
+    "Miljøpartiet De Grønne (MDG)",
+  ];
 
   const summaryValue = (p, keys) => (p.summary.find(([k]) => keys.includes(k)) || [])[1];
 
@@ -163,13 +135,14 @@ window.SNOOP_TIMELINES = {
       if (r() < 0.65) add(`${by}`, "Baptised", "Church of Norway", "Church register");
       if (p.age < 16) return;
       add(`${by + 15}-05`, r() < 0.6 ? "Church confirmation" : "Civil confirmation (Humanist)", null, "Membership register");
-      const elections = [1985, 1989, 1993, 1997, 2001, 2005, 2009, 2013, 2017, 2021, 2025].filter((y) => y >= by + 18);
+      // Parliamentary (Storting) elections, real Norwegian parties.
+      const elections = [1985, 1989, 1993, 1997, 2001, 2005, 2009, 2013, 2017, 2021, 2025, 2029].filter((y) => y >= by + 18 && y <= NOW);
       elections.slice(-4).forEach((y) =>
-        add(`${y}-09`, `Voted Party ${"ABCDE"[Math.floor(r() * 5)]}`, null, "Electronic ballot records")
+        add(`${y}-09`, `Voted ${PARTIES[Math.floor(r() * PARTIES.length)]}`, "Storting election", "Electronic ballot records")
       );
       if (p.age >= 18)
         pickN(r, [
-          ["Liked 34 posts from a Party D page", "Platform data"],
+          [`Liked 34 posts from ${PARTIES[Math.floor(r() * PARTIES.length)]} on Facebook`, "Facebook activity"],
           ["Signed petition against the new toll road", "Petition platform"],
           ["Searched “which party matches me”", "Search history"],
           ["Left the Church of Norway", "Membership register"],
@@ -210,13 +183,30 @@ window.SNOOP_TIMELINES = {
         ["Crypto purchase", -15000, "Exchange records", true],
       ], 3).forEach(([t, a, s, h]) => add(ym(NOW - Math.floor(r() * 2), r), t, null, s, { amount: a, hidden: !!h }));
     },
+
+    criminal(p, by, r, add) {
+      if (p.age < 15) return;
+      const level = (p.indexes && p.indexes.criminality) || 10;
+      if (p.age >= 18) add(`${by + 18}`, "Police certificate issued: no convictions", null, "Police register");
+      pickN(r, [
+        ["Fare dodging fine, Ruter", "NOK 1 150", "Ruter fine register"],
+        ["Speeding fine, Ring 3 (+9 km/h)", "NOK 2 600", "Statens vegvesen"],
+        ["Parking fine, Grünerløkka", "NOK 900", "Oslo kommune parking fines"],
+        ["Noise complaint filed by a neighbour", "Police visited at 23:40, no further action", "Police log", true],
+        ["Reported a stolen bike", "Case dropped after 3 weeks", "Police report"],
+        ["Bought fireworks without a licence", "Card transaction flagged", "Card transactions", true],
+        ["Downloaded 212 pirated films", "IP address logged by rights holder", "ISP logs", true],
+      ], Math.min(4, 1 + Math.round(level / 8))).forEach(([t, d, s, h]) =>
+        add(ym(between(r, Math.max(by + 16, NOW - 8), NOW), r), t, d, s, { hidden: !!h })
+      );
+    },
   };
 
   /* ---------- Balance series for the economy view ---------- */
   function balanceSeries(p, events, r, start) {
     const months = [];
     for (let i = 24; i >= 0; i--) {
-      const d = new Date(NOW, 10 - i, 1); // Nov 2024 → Nov 2026
+      const d = new Date(NOW, NOW_MONTH - 1 - i, 1); // last 24 months up to today
       months.push(`${d.getFullYear()}-${pad(d.getMonth() + 1)}`);
     }
     const child = p.age < 16;
@@ -243,11 +233,11 @@ window.SNOOP_TIMELINES = {
 
       if (!hand.full) gen[cat]?.(p, by, r, add, (relationsAll[id] || []).filter((x) => profiles[x.id]));
 
-      posts
+      gossip
         .filter((x) => x.subject === id && x.category === cat)
         .forEach((x) => {
           const d = (x.evidence.source.match(/(\d{4}-\d{2})-\d{2}/) || [])[1] || `${NOW}`;
-          events.push({ date: d, title: x.text, source: x.evidence.source.split(" · ")[0], finding: x });
+          events.push({ date: d, title: x.text, source: x.evidence.source.split(" · ")[0], gossip: x });
         });
 
       events.sort((a, b) => b.date.localeCompare(a.date)); // newest first

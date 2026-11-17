@@ -4,18 +4,19 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Snoop Book</title>
+  <link rel="icon" href="assets/icon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#F3E419">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="home.css">
+  <link rel="stylesheet" href="onboarding.css">
 </head>
 <body>
   <header class="topbar">
     <a class="logo" href="index.html" aria-label="Snoop Book – home">
-      <span class="logo__b" aria-hidden="true">B</span>
-      <span class="logo__snoop" aria-hidden="true">Snoop</span>
-      <span class="logo__k" aria-hidden="true">K</span>
+      <img class="logo__img" src="assets/logo.svg" alt="" width="832" height="648">
     </a>
     <nav class="nav" aria-label="Main">
       <a href="index.html" aria-current="page">Home</a>
@@ -29,7 +30,7 @@
       <section class="chat" aria-labelledby="chat-title">
         <div class="chat__head">
           <h1 id="chat-title" class="chat__title">Ask the Archive</h1>
-          <p class="chat__sub">4.1 billion decrypted records · crowd-verified</p>
+          <p class="chat__sub">4.1 billion decrypted records · curated by Snoop AI</p>
         </div>
         <div class="chat__log" id="chat-log" aria-live="polite"></div>
         <div class="chat__chips" id="chat-chips"></div>
@@ -41,12 +42,13 @@
       </section>
 
       <!-- Feed -->
-      <section class="feed" aria-label="Findings">
+      <section class="feed" aria-label="Gossip">
         <div class="tabs" role="tablist" aria-label="Feed">
-          <button class="tab" role="tab" id="tab-trending" aria-selected="true" aria-controls="feed-list" data-tab="trending">Trending</button>
+          <button class="tab" role="tab" id="tab-for-you" aria-selected="true" aria-controls="feed-list" data-tab="for-you">For you</button>
+          <button class="tab" role="tab" id="tab-trending" aria-selected="false" aria-controls="feed-list" data-tab="trending">Juiciest</button>
           <button class="tab" role="tab" id="tab-network" aria-selected="false" aria-controls="feed-list" data-tab="network">Your network</button>
         </div>
-        <div class="feed__list" id="feed-list" role="tabpanel" aria-labelledby="tab-trending"></div>
+        <div class="feed__list" id="feed-list" role="tabpanel" aria-labelledby="tab-for-you"></div>
       </section>
     </main>
 
@@ -59,16 +61,20 @@
       <section class="side-card">
         <h2 class="side-card__title">Archive status</h2>
         <dl class="stats">
-          <div><dt>Day after Q-day</dt><dd>412</dd></div>
+          <div><dt>Days since the Big Leak</dt><dd>20</dd></div>
           <div><dt>Records decrypted</dt><dd>4.1 bn</dd></div>
-          <div><dt>Findings verified today</dt><dd>38 207</dd></div>
+          <div><dt>Gossip surfaced today</dt><dd>38 207</dd></div>
           <div><dt>Encryption still holding</dt><dd class="stats--bad">0 %</dd></div>
         </dl>
+        <a class="replay-intro" id="replay-intro" href="?intro">Replay intro</a>
       </section>
     </aside>
   </div>
 
   <script src="data.js"></script>
+  <script src="icons.js"></script>
   <script src="home.js"></script>
+  <script src="gossip-detail.js"></script>
+  <script src="onboarding.js"></script>
 </body>
 </html>

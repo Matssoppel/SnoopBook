@@ -1,9 +1,12 @@
 (function () {
   const params = new URLSearchParams(location.search);
   const profiles = window.SNOOP_PROFILES || {};
-  const posts = window.SNOOP_POSTS || [];
+  const gossipAll = window.SNOOP_GOSSIP || [];
+  const icons = window.SnoopIcons;
+  const srcIcon = (text, extra) => (icons ? icons.source(text, extra) : "");
   // On me.html the page shows the viewer's own file.
-  const id = (document.body.dataset.me && window.SNOOP_VIEWER?.id) || params.get("id") || Object.keys(profiles)[0];
+  const isMe = Boolean(document.body.dataset.me && window.SNOOP_VIEWER?.id);
+  const id = (isMe && window.SNOOP_VIEWER.id) || params.get("id") || Object.keys(profiles)[0];
   const p = profiles[id];
   const root = document.getElementById("profile");
 
@@ -23,10 +26,10 @@
   const rand = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 2 ** 32);
 
   const categoryList = p.categories || window.SNOOP_DEFAULT_CATEGORIES;
-  const catTitle = Object.fromEntries(
-    [...categoryList, { id: "public-reception", title: "Public Reception" }].map((c) => [c.id, c.title])
-  );
-  const findings = posts.filter((x) => x.subject === id);
+  const catTitle = Object.fromEntries(categoryList.map((c) => [c.id, c.title]));
+  // Gossip about this person, juiciest first.
+  // `profile: false` keeps a story off profiles (it only shows in the feed).
+  const gossip = gossipAll.filter((x) => x.subject === id && x.profile !== false).sort((a, b) => b.juice - a.juice);
   const firstName = p.name.split(" ")[0];
   const fileNo = `SB-${String(seed % 100000).padStart(5, "0")}`;
 
@@ -59,55 +62,41 @@
       </figcaption>
     </figure>`;
 
-  /* ---------- Scores ---------- */
-  const scores = p.scores
-    .map(
-      (s) => `
-      <div class="card card--score" id="${esc(s.id)}">
-        <span class="card__title">${esc(s.title)}</span>
-        <span class="card__desc">${esc(s.description)}</span>
-        <span class="score__trend score__trend--${esc(s.trend)}">
-          <span aria-hidden="true">${s.trend === "above" ? "▲" : "▼"}</span> ${esc(s.trend)} average
-        </span>
-        <span class="score__value">${s.value.toFixed(1)}%</span>
-        <span class="meter" role="meter" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${s.value}" aria-label="${esc(s.title)} score">
-          <span class="meter__fill" style="width:${s.value}%"></span>
-          <span class="meter__avg" title="Average: 50%"></span>
-        </span>
-      </div>`
-    )
-    .join("");
-
-  /* ---------- Records by source (single-series bar chart) ---------- */
-  const sources = [
-    ["Messages", 18000 + rand() * 60000],
-    ["Card transactions", 6000 + rand() * 20000],
-    ["Location pings", 40000 + rand() * 140000],
-    ["Search queries", 9000 + rand() * 40000],
-    ["Health records", 20 + rand() * 300],
-  ].map(([label, v]) => [label, Math.round(v)]);
-  const maxRec = Math.max(...sources.map((s) => s[1]));
-  const totalRec = sources.reduce((a, s) => a + s[1], 0);
-  const records = `
-    <section class="card records" aria-labelledby="records-title">
-      <h2 class="records__title" id="records-title">Records indexed</h2>
-      <p class="records__total">${num(totalRec)}</p>
+  /* ---------- Indexes (AI-estimated) ---------- */
+  const indexDefs = window.SNOOP_INDEXES || [];
+  const vals = p.indexes || {};
+  const indexes = `
+    <section class="card records indexes" aria-labelledby="indexes-title">
+      <h2 class="records__title" id="indexes-title">Snoop indexes</h2>
+      <p class="indexes__sub">Estimated by Snoop AI from ${num(Math.round(180000 + rand() * 220000))} decrypted records</p>
       <ul class="bars">
-        ${sources
-          .map(
-            ([label, v]) => `
-          <li class="bar" data-tip="${num(v)} ${label.toLowerCase()} decrypted">
-            <span class="bar__label">${esc(label)}</span>
-            <span class="bar__track"><span class="bar__fill" style="width:${Math.max(1.5, (v / maxRec) * 100)}%"></span></span>
-            <span class="bar__value">${fmt(v)}</span>
-          </li>`
-          )
+        ${indexDefs
+          .filter((d) => typeof vals[d.id] === "number")
+          .map((d) => {
+            const v = vals[d.id];
+            const pct = ((v - d.min) / (d.max - d.min)) * 100;
+            const avgPct = ((d.avg - d.min) / (d.max - d.min)) * 100;
+            const isBad = d.bad === "high" ? v > d.avg : v < d.avg;
+            const vs = v === d.avg ? "average" : `${v > d.avg ? "above" : "below"} average (${d.avg})`;
+            return `
+          <li class="bar index ${isBad ? "is-bad" : ""}" data-tip="${esc(`${d.title}: ${v}, ${vs}. Based on ${d.basis.toLowerCase()}.`)}">
+            <span class="bar__label">${esc(d.title)}<small>${esc(d.basis)}</small></span>
+            <span class="bar__track" role="meter" aria-valuemin="${d.min}" aria-valuemax="${d.max}" aria-valuenow="${v}" aria-label="${esc(d.title)}">
+              <span class="bar__fill" style="width:${Math.max(1.5, pct)}%"></span>
+              <span class="index__avg" style="left:${avgPct}%" title="Average: ${d.avg}"></span>
+            </span>
+            <span class="bar__value">${v}</span>
+          </li>`;
+          })
           .join("")}
       </ul>
     </section>`;
 
   /* ---------- Network / relations ---------- */
-  const relations = ((window.SNOOP_RELATIONS || {})[id] || []).filter((r) => profiles[r.id]);
+  // On "My profile" the lecturers are left out of your own network.
+  const relations = ((window.SNOOP_RELATIONS || {})[id] || []).filter(
+    (r) => profiles[r.id] && !(isMe && /lecturer/i.test(r.relation))
+  );
   const hiddenCount = relations.filter((r) => r.hidden).length;
   const network = `
     <section class="card network" aria-labelledby="network-title">
@@ -139,19 +128,44 @@
       }
     </section>`;
 
+  /* ---------- Camera roll (only on "My profile") ---------- */
+  const photos = (isMe && window.SNOOP_VIEWER.gallery) || [];
+  const SHOW = 6;
+  const gallery = photos.length
+    ? `
+    <section class="gallery" aria-labelledby="gallery-title">
+      <h2 class="summary__heading" id="gallery-title">Camera roll</h2>
+      <p class="gallery__sub">${srcIcon("iCloud")} ${num(window.SNOOP_VIEWER.galleryTotal || photos.length)} photos from your iCloud backup</p>
+      <ul class="gallery__grid">
+        ${photos
+          .map(
+            (ph, i) => `
+          <li class="photo"${i >= SHOW ? " hidden" : ""}>
+            <button type="button" class="photo__btn" data-photo="${i}" aria-label="${esc(ph.caption || "Photo")}, ${esc(ph.date || "")}">
+              <img src="${esc(ph.src)}" alt="" loading="lazy" onerror="this.closest('.photo').classList.add('is-missing')">
+              <span class="photo__missing">${esc(ph.src)}</span>
+            </button>
+          </li>`
+          )
+          .join("")}
+      </ul>
+      ${photos.length > SHOW ? `<button type="button" class="gallery__more" data-more aria-expanded="false">See more +</button>` : ""}
+    </section>`
+    : "";
+
   /* ---------- Categories ---------- */
   const TL = window.SnoopTimeline;
   const timelines = Object.fromEntries(categoryList.map((c) => [c.id, TL ? TL.build(id, c.id) : { events: [] }]));
 
   const categories = categoryList
     .map((c) => {
-      const n = findings.filter((f) => f.category === c.id).length;
+      const n = gossip.filter((f) => f.category === c.id).length;
       const ev = timelines[c.id].events.length;
       return `
       <a class="card card--category" href="#${esc(c.id)}" data-category="${esc(c.id)}" aria-expanded="false" aria-controls="view">
         <span class="card__title">${esc(c.title)}</span>
         <span class="card__desc">${esc(c.description)}</span>
-        <span class="badge ${n ? "badge--hot" : ""}">${n ? `${n} finding${n === 1 ? "" : "s"}` : `${ev} events`}</span>
+        <span class="badge ${n ? "badge--hot" : ""}">${n ? `${n} gossip` : `${ev} events`}</span>
       </a>`;
     })
     .join("");
@@ -165,17 +179,21 @@
         </div>
         <h2 class="summary__heading">Summary</h2>
         <ul class="summary">${summary}</ul>
+        ${gallery}
       </div>
 
-      <div class="identity__main">
+      <div class="identity__head">
         <p class="eyebrow">Subject file ${fileNo} · updated ${1 + Math.floor(rand() * 11)} h ago</p>
         <h1 class="name">${esc(p.name)}, ${esc(p.gender)}, ${esc(p.age)}</h1>
         <div class="tags">${tags}</div>
-        ${movement}
-        ${records}
       </div>
 
-      <div class="identity__scores">${scores}${network}</div>
+      <div class="identity__main">
+        ${movement}
+        ${indexes}
+      </div>
+
+      <div class="identity__scores">${network}</div>
     </section>
 
     <section class="categories" aria-label="Categories">${categories}</section>
@@ -184,35 +202,45 @@
 
     <section class="findings" id="findings" aria-labelledby="findings-title">
       <div class="findings__head">
-        <h2 class="section-title" id="findings-title">Findings about ${esc(firstName)}</h2>
+        <h2 class="section-title" id="findings-title">Juiciest gossip about ${esc(firstName)}</h2>
+        <p class="findings__sub">${srcIcon("Snoop AI")} Curated by Snoop AI · ranked by juice, trending first</p>
       </div>
       <div class="findings__list" id="findings-list"></div>
     </section>
+
   `;
 
-  /* ---------- Findings list ---------- */
-  document.getElementById("findings-list").innerHTML = findings.length
-    ? findings
-        .map((f) => {
-          const a = profiles[f.author];
-          return `
-        <article class="finding" id="finding-${esc(f.id)}">
-          <p class="finding__meta"><span class="chip">${esc(catTitle[f.category] || f.category)}</span> ${esc(f.time)} ago</p>
+  /* ---------- Gossip list (curated by Snoop AI) ---------- */
+  const mentionHtml = (ids) =>
+    (ids || [])
+      .filter((m) => profiles[m])
+      .map((m) => `<a class="mention" href="${profileUrl(m)}" title="${esc(profiles[m].name)}"><img src="${esc(profiles[m].photo)}" alt="${esc(profiles[m].name)}" width="28" height="28"></a>`)
+      .join("");
+  document.getElementById("findings-list").innerHTML = gossip.length
+    ? gossip
+        .map((f, i) => `
+        <article class="finding gossip" id="gossip-${esc(f.id)}" data-gossip="${esc(f.id)}" tabindex="0" aria-label="${esc(f.headline || f.text)}. Open full story">
+          <p class="finding__meta">
+            <span class="gossip__rank">#${i + 1}</span>
+            <span class="chip">${esc(catTitle[f.category] || f.category)}</span>
+            <span class="juice" title="Juice score from Snoop AI">${icons ? icons.icon("flame") : ""} ${f.juice}</span>
+            <span class="gossip__time">${esc(f.time)} ago</span>
+          </p>
+          ${f.headline ? `<h3 class="gossip-headline">${esc(f.headline)}</h3>` : ""}
           <p class="finding__text">${esc(f.text)}</p>
-          <figure class="evidence">
-            <figcaption class="evidence__label"><span class="evidence__tag">Decrypted</span> ${esc(f.evidence.source)}</figcaption>
+          <figure class="evidence evidence--preview">
+            <figcaption class="evidence__label">${srcIcon(f.evidence.source)} ${esc(f.evidence.source)}</figcaption>
             <pre class="evidence__body">${esc(f.evidence.body)}</pre>
           </figure>
+          ${f.image ? `<figure class="gossip-image"><img src="${esc(f.image.src)}" alt="${esc(f.image.alt || "")}" loading="lazy" onerror="this.closest('figure').remove()">${f.image.caption ? `<figcaption>${srcIcon(f.image.caption)} ${esc(f.image.caption)}</figcaption>` : ""}</figure>` : ""}
           <p class="finding__foot">
-            <a class="finding__author" href="${profileUrl(f.author)}">
-              <img src="${esc(a.photo)}" alt="" width="28" height="28"> Found by <strong>${esc(a.name)}</strong>
-            </a>
-            <span>${fmt(f.verified)} verified</span>
+            <span class="gossip__mentions">${f.mentions && f.mentions.length ? `Also involved ${mentionHtml(f.mentions)}` : ""}</span>
+            <span>${fmt(f.reads)} reads</span>
           </p>
-        </article>`;
-        })
+          <button type="button" class="read-more" data-gossip-open>Read the full story →</button>
+        </article>`)
         .join("")
-    : `<p class="findings__empty">No verified findings yet. The archive is still indexing ${esc(firstName)}.</p>`;
+    : `<p class="findings__empty">Snoop AI has found nothing juicy yet. It is still indexing ${esc(firstName)}.</p>`;
 
   /* ---------- Category views ---------- */
   const view = document.getElementById("view");
@@ -225,20 +253,20 @@
 
   function eventHtml(e) {
     const person = e.person && profiles[e.person];
-    const tag = e.finding
-      ? `<a class="tl-tag tl-tag--finding" href="#finding-${esc(e.finding.id)}">Finding · ${fmt(e.finding.verified)} verified</a>`
+    const tag = e.gossip
+      ? `<a class="tl-tag tl-tag--finding" href="#gossip-${esc(e.gossip.id)}" data-gossip="${esc(e.gossip.id)}">Gossip · juice ${e.gossip.juice}</a>`
       : e.hidden
       ? `<span class="tl-tag tl-tag--hidden">Hidden</span>`
       : "";
     return `
-      <li class="tl-event ${e.hidden || e.finding ? "is-flagged" : ""}">
+      <li class="tl-event ${e.hidden || e.gossip ? "is-flagged" : ""}">
         <span class="tl-dot" aria-hidden="true"></span>
         <div class="tl-body">
           <p class="tl-date">${esc(fmtDate(e.date))} ${tag}</p>
           <p class="tl-title">${esc(e.title)}</p>
           ${e.detail ? `<p class="tl-detail">${esc(e.detail)}</p>` : ""}
           <p class="tl-foot">
-            ${e.source ? `<span class="tl-source">Decrypted · ${esc(e.source.replace(/\s*\(decrypted\)/i, ""))}</span>` : ""}
+            ${e.source ? `<span class="tl-source">${srcIcon(e.source, e.title)} ${esc(e.source.replace(/\s*\(decrypted\)/i, ""))}</span>` : ""}
             ${typeof e.amount === "number" ? `<span class="tl-amount">${e.amount > 0 ? "+" : ""}${nok(e.amount)}</span>` : ""}
             ${person ? `<a class="tl-person" href="${profileUrl(e.person)}"><img src="${esc(person.photo)}" alt="" width="24" height="24">${esc(person.name)}</a>` : ""}
           </p>
@@ -265,7 +293,7 @@
     current = cat;
     const t = timelines[cat];
     const ev = t.events;
-    const hidden = ev.filter((e) => e.hidden || e.finding).length;
+    const hidden = ev.filter((e) => e.hidden || e.gossip).length;
     const sources = new Set(ev.map((e) => e.source).filter(Boolean)).size;
     const span = ev.length ? `${ev[ev.length - 1].date.slice(0, 4)}–${ev[0].date.slice(0, 4)}` : "–";
 
@@ -433,4 +461,38 @@
 
   const initial = location.hash.slice(1);
   if (initial && timelines[initial]) openView(initial, false);
+
+  /* ---------- Camera roll: see more + photo viewer ---------- */
+  if (photos.length) {
+    const galleryEl = root.querySelector(".gallery");
+    const dlg = document.createElement("dialog");
+    dlg.className = "gd photo-view";
+    document.body.appendChild(dlg);
+    galleryEl.addEventListener("click", (e) => {
+      const more = e.target.closest("[data-more]");
+      if (more) {
+        const open = more.getAttribute("aria-expanded") !== "true";
+        galleryEl.querySelectorAll(".photo").forEach((li, i) => (li.hidden = !open && i >= SHOW));
+        more.setAttribute("aria-expanded", String(open));
+        more.textContent = open ? "Show less −" : "See more +";
+        return;
+      }
+      const b = e.target.closest("[data-photo]");
+      if (!b || b.closest(".is-missing")) return;
+      const ph = photos[Number(b.dataset.photo)];
+      dlg.innerHTML = `
+        <div class="gd__bar">
+          <span class="gd__ai">${srcIcon("iCloud")} ${esc(ph.date || "")}${ph.place ? ` · ${esc(ph.place)}` : ""}</span>
+          <button type="button" class="gd__close" data-close-photo aria-label="Close">${icons ? icons.icon("x") : "×"}</button>
+        </div>
+        <img class="photo-view__img" src="${esc(ph.src)}" alt="${esc(ph.caption || "")}">
+        ${ph.caption ? `<p class="photo-view__cap">${esc(ph.caption)}</p>` : ""}`;
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", "");
+    });
+    dlg.addEventListener("click", (e) => {
+      if (e.target === dlg || e.target.closest("[data-close-photo]")) {
+        if (dlg.close) dlg.close(); else dlg.removeAttribute("open");
+      }
+    });
+  }
 })();

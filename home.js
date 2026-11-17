@@ -1,10 +1,11 @@
 (function () {
   const profiles = window.SNOOP_PROFILES || {};
-  const posts = window.SNOOP_POSTS || [];
+  const posts = window.SNOOP_GOSSIP || [];
   const viewer = window.SNOOP_VIEWER || { network: [] };
-  const categories = Object.fromEntries(
-    [...(window.SNOOP_DEFAULT_CATEGORIES || []), { id: "public-reception", title: "Public Reception" }].map((c) => [c.id, c.title])
-  );
+  const categories = Object.fromEntries((window.SNOOP_DEFAULT_CATEGORIES || []).map((c) => [c.id, c.title]));
+  const icons = window.SnoopIcons;
+  const srcIcon = (text) => (icons ? icons.source(text) : "");
+  const honesty = (p) => (p.indexes && typeof p.indexes.honesty === "number" ? p.indexes.honesty : null);
 
   const esc = (s) =>
     String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -17,65 +18,77 @@
   /* ------------------------------------------------------------------ */
   const feedList = document.getElementById("feed-list");
   const tabs = document.querySelectorAll(".tab");
-  const state = {}; // per-post: { vote: "verify" | "dispute" | null, comments: [] }
+  const state = {}; // per-post: { comments: [], open: bool }
+  const byJuice = (list) => [...list].sort((a, b) => b.juice - a.juice);
+
+  // Some gossip (e.g. Enya selling student work) is only found by digging
+  // into a profile, so it stays out of the home feed.
+  const feedPosts = posts.filter((p) => p.feed !== false);
 
   function postsFor(tab) {
     if (tab === "network") {
       const net = new Set(viewer.network);
-      return posts.filter((p) => net.has(p.subject) || net.has(p.author));
+      return byJuice(feedPosts.filter((p) => net.has(p.subject) || (p.mentions || []).some((m) => net.has(m))));
     }
-    return [...posts].sort((a, b) => b.verified - a.verified);
+    if (tab === "for-you") {
+      const order = (viewer.forYou || []).filter((id) => feedPosts.some((p) => p.id === id));
+      const first = order.map((id) => feedPosts.find((p) => p.id === id));
+      return [...first, ...byJuice(feedPosts.filter((p) => !order.includes(p.id)))];
+    }
+    return byJuice(feedPosts);
   }
 
   function renderPost(p) {
-    const a = profiles[p.author];
     const s = profiles[p.subject];
-    const st = (state[p.id] ||= { vote: null, comments: [] });
-    const verified = p.verified + (st.vote === "verify" ? 1 : 0);
-    const disputed = p.disputed + (st.vote === "dispute" ? 1 : 0);
-    const accuracy = Math.round((verified / (verified + disputed)) * 100);
+    const st = (state[p.id] ||= { comments: [] });
+    const h = honesty(s);
     const comments = st.comments
       .map((c) => `<li class="comment"><strong>You</strong> ${esc(c)}</li>`)
       .join("");
+    const mentions = (p.mentions || []).filter((m) => profiles[m]);
 
     return `
-    <article class="post" data-id="${p.id}">
+    <article class="post" data-id="${p.id}" data-gossip="${p.id}" tabindex="0" aria-label="${esc(p.headline || p.text)}. Open full story">
       <header class="post__head">
-        <a href="${profileUrl(p.author)}"><img class="post__avatar" src="${esc(a.photo)}" alt="" width="48" height="48"></a>
+        <img class="post__avatar post__avatar--ai" src="assets/icon.svg" alt="" width="48" height="48">
         <div>
           <p class="post__byline">
-            <a href="${profileUrl(p.author)}"><strong>${esc(a.name)}</strong></a>
-            <span class="post__verb">snooped on</span>
-            <a href="${profileUrl(p.subject)}"><strong>${esc(s.name)}</strong></a>
+            <strong>Snoop AI</strong>
+            <span class="post__verb">found something about</span>
+            ${p.subject === viewer.id ? `<a href="me.html"><strong>you</strong></a>` : `<a href="${profileUrl(p.subject)}"><strong>${esc(s.name)}</strong></a>`}
           </p>
-          <p class="post__meta">${esc(p.time)} · <span class="chip">${esc(categories[p.category] || p.category)}</span></p>
+          <p class="post__meta">${esc(p.time)} ago · <span class="chip">${esc(categories[p.category] || p.category)}</span></p>
         </div>
+        <span class="juice juice--big" title="Juice score: how juicy Snoop AI thinks this is">${icons ? icons.icon("flame") : ""} ${p.juice}</span>
       </header>
 
+      ${p.headline ? `<h2 class="gossip-headline">${esc(p.headline)}</h2>` : ""}
       <p class="post__text">${esc(p.text)}</p>
 
-      <figure class="evidence">
-        <figcaption class="evidence__label"><span class="evidence__tag">Decrypted</span> ${esc(p.evidence.source)}</figcaption>
+      <figure class="evidence evidence--preview">
+        <figcaption class="evidence__label">${srcIcon(p.evidence.source)} ${esc(p.evidence.source)}</figcaption>
         <pre class="evidence__body">${esc(p.evidence.body)}</pre>
       </figure>
 
-      <a class="subject" href="${profileUrl(p.subject)}">
+${p.image ? `<figure class="gossip-image"><img src="${esc(p.image.src)}" alt="${esc(p.image.alt || "")}" loading="lazy" onerror="this.closest('figure').remove()">${p.image.caption ? `<figcaption>${srcIcon(p.image.caption)} ${esc(p.image.caption)}</figcaption>` : ""}</figure>` : ""}
+
+      <button type="button" class="read-more" data-gossip-open>Read the full story →</button>
+
+      <a class="subject" href="${p.subject === viewer.id ? "me.html" : profileUrl(p.subject)}">
         <img class="subject__photo" src="${esc(s.photo)}" alt="" width="56" height="56">
         <span class="subject__info">
-          <strong>${esc(s.name)}, ${esc(s.gender)}, ${esc(s.age)}</strong>
-          <span>Public Reception ${s.scores[1].value.toFixed(1)}%</span>
+          <strong>${p.subject === viewer.id ? "You" : esc(s.name)}, ${esc(s.gender)}, ${esc(s.age)}</strong>
+          ${h !== null ? `<span>Honesty index ${h}</span>` : ""}
         </span>
-        <span class="subject__cta">Open profile →</span>
+        <span class="subject__cta">${p.subject === viewer.id ? "Your profile →" : "Open profile →"}</span>
       </a>
 
       <p class="post__stats">
-        <span>${fmt(verified)} verified · ${fmt(disputed)} disputed · ${accuracy}% accuracy</span>
-        <span>${fmt(p.comments + st.comments.length)} comments</span>
+        <span>${fmt(p.reads)} reads${mentions.length ? ` · also involves ${mentions.map((m) => (m === viewer.id ? `<a href="me.html">you</a>` : `<a href="${profileUrl(m)}">${esc(firstName(m))}</a>`)).join(", ")}` : ""}</span>
+        <span>${st.comments.length} comment${st.comments.length === 1 ? "" : "s"}</span>
       </p>
 
       <footer class="post__actions">
-        <button type="button" class="action ${st.vote === "verify" ? "is-on" : ""}" data-action="verify" aria-pressed="${st.vote === "verify"}">✓ Verify</button>
-        <button type="button" class="action ${st.vote === "dispute" ? "is-on is-dispute" : ""}" data-action="dispute" aria-pressed="${st.vote === "dispute"}">✕ Dispute</button>
         <button type="button" class="action" data-action="comment">Comment</button>
         <button type="button" class="action" data-action="share">Share</button>
       </footer>
@@ -83,13 +96,13 @@
       <div class="post__comments" ${st.open ? "" : "hidden"}>
         <ul class="comments">${comments}</ul>
         <form class="comment-form">
-          <input class="comment-input" type="text" placeholder="Add context or another finding…" aria-label="Write a comment">
+          <input class="comment-input" type="text" placeholder="Write a comment…" aria-label="Write a comment">
         </form>
       </div>
     </article>`;
   }
 
-  let currentTab = "trending";
+  let currentTab = "for-you";
   function renderFeed() {
     const list = postsFor(currentTab);
     feedList.innerHTML = list.length
@@ -114,10 +127,7 @@
     const st = state[id];
     const action = btn.dataset.action;
 
-    if (action === "verify" || action === "dispute") {
-      st.vote = st.vote === action ? null : action;
-      rerenderPost(article, id);
-    } else if (action === "comment") {
+    if (action === "comment") {
       st.open = !st.open;
       rerenderPost(article, id);
       if (st.open) feedList.querySelector(`[data-id="${id}"] .comment-input`).focus();
@@ -152,8 +162,12 @@
   /* ------------------------------------------------------------------ */
   /* Sidebar                                                             */
   /* ------------------------------------------------------------------ */
+  // Sidebar: a short list of friends and classmates (lecturers left out).
+  const myRelations = (window.SNOOP_RELATIONS || {})[viewer.id] || [];
+  const isLecturer = (id) => myRelations.some((r) => r.id === id && /lecturer/i.test(r.relation));
   document.getElementById("network-list").innerHTML = viewer.network
-    .filter((id) => profiles[id])
+    .filter((id) => profiles[id] && !isLecturer(id))
+    .slice(0, 4)
     .map((id) => {
       const p = profiles[id];
       const n = posts.filter((x) => x.subject === id).length;
@@ -161,7 +175,7 @@
       <li>
         <a class="person" href="${profileUrl(id)}">
           <img src="${esc(p.photo)}" alt="" width="40" height="40">
-          <span><strong>${esc(p.name)}</strong><small>${n} new finding${n === 1 ? "" : "s"}</small></span>
+          <span><strong>${esc(p.name)}</strong><small>${n ? `${n} new gossip` : "Nothing new"}</small></span>
         </a>
       </li>`;
     })
@@ -178,7 +192,7 @@
         <span class="me-card__info">
           <strong>${esc(me.name)}</strong>
           <span>${views.toLocaleString("en-US").replace(/,/g, " ")} profile views this week</span>
-          ${mine ? `<span class="me-card__alert">${mine} new finding${mine === 1 ? "" : "s"} about you</span>` : ""}
+          ${mine ? `<span class="me-card__alert">${mine} new gossip about you</span>` : ""}
         </span>
         <span class="me-card__cta" aria-hidden="true">→</span>
       </a>`;
@@ -194,9 +208,9 @@
 
   const suggestions = [
     "What's new in my network?",
-    "Who is lying about money?",
-    "Tell me about Jan Thomas",
-    "What's trending today?",
+    "Who has broken the law?",
+    "Tell me about Enya",
+    "What's the juiciest gossip?",
     "What do people know about me?",
   ];
   chips.innerHTML = suggestions
@@ -213,6 +227,7 @@
     { cat: "medical", re: /health|medical|therapy|sick|diagnos|helse|syk/ },
     { cat: "religion-politics", re: /vote|politic|religio|party|stem|parti/ },
     { cat: "career", re: /job|work|school|grade|career|student|study|jobb|skole/ },
+    { cat: "criminal", re: /crime|criminal|police|fine|illegal|tax|kriminel|politi|bot\b/ },
     { cat: "data-use", re: /location|where|phone|screen|track|lokasjon/ },
   ];
 
@@ -233,39 +248,41 @@
 
     if (person) {
       const p = profiles[person];
-      const found = posts.filter((x) => x.subject === person);
+      const found = byJuice(posts.filter((x) => x.subject === person));
       const lines = p.summary.slice(0, 3).map(([k, v]) => `<li><strong>${esc(k)}:</strong> ${esc(v)}</li>`).join("");
-      const latest = found[0] ? `<p class="bot__finding">Latest finding: “${esc(found[0].text)}”</p>` : "";
+      const latest = found[0] ? `<p class="bot__finding">Juiciest: “${esc(found[0].text)}”</p>` : "";
+      const ix = p.indexes || {};
       return `
-        <p><strong>${esc(p.name)}, ${esc(p.gender)}, ${esc(p.age)}</strong>. ${fmt(18000 + p.age * 731)} records indexed, ${found.length} crowd-verified finding${found.length === 1 ? "" : "s"}.</p>
-        <ul>${lines}</ul>${latest}
+        <p><strong>${esc(p.name)}, ${esc(p.gender)}, ${esc(p.age)}</strong>. ${found.length} piece${found.length === 1 ? "" : "s"} of gossip.</p>
+        <ul>${lines}</ul>
+        <p>Loyalty ${ix.loyalty ?? "–"} · Criminality ${ix.criminality ?? "–"} · Honesty ${ix.honesty ?? "–"} · IQ ${ix.iq ?? "–"}</p>${latest}
         <a class="bot__link" href="${profileUrl(person)}">Open full profile →</a>`;
     }
 
     if (/network|friend|nettverk|venn/.test(q)) {
       const net = new Set(viewer.network);
-      const items = posts.filter((x) => net.has(x.subject)).slice(0, 4);
-      return `<p>${items.length} new findings about people you know:</p>
+      const items = byJuice(posts.filter((x) => net.has(x.subject))).slice(0, 4);
+      return `<p>The juiciest about people you know:</p>
         <ul>${items.map((x) => `<li>${personLink(x.subject)}: ${esc(x.text)}</li>`).join("")}</ul>`;
     }
 
     if (/trend|popular|viral|today|i dag/.test(q)) {
-      const top = [...posts].sort((a, b) => b.verified - a.verified).slice(0, 3);
-      return `<p>Most verified findings right now:</p>
-        <ul>${top.map((x) => `<li>${personLink(x.subject)} (${fmt(x.verified)} verified): ${esc(x.text)}</li>`).join("")}</ul>`;
+      const top = byJuice(posts).slice(0, 3);
+      return `<p>Juiciest gossip right now:</p>
+        <ul>${top.map((x) => `<li>${personLink(x.subject)} (juice ${x.juice}): ${esc(x.text)}</li>`).join("")}</ul>`;
     }
 
     const topic = topics.find((t) => t.re.test(q));
     if (topic) {
-      const items = posts.filter((x) => x.category === topic.cat);
+      const items = byJuice(posts.filter((x) => x.category === topic.cat));
       if (items.length) {
-        return `<p>${items.length} matching finding${items.length === 1 ? "" : "s"} in <em>${esc(categories[topic.cat])}</em>:</p>
+        return `<p>${items.length} piece${items.length === 1 ? "" : "s"} of gossip in <em>${esc(categories[topic.cat])}</em>:</p>
           <ul>${items.map((x) => `<li>${personLink(x.subject)}: ${esc(x.text)}</li>`).join("")}</ul>`;
       }
     }
 
     return `<p>Your query matched ${fmt(2381004)} decrypted records. Too many to show.</p>
-      <p>Try a name (e.g. <em>Ingrid</em>, <em>Petter</em>) or ask about money, love, health, politics or work.</p>`;
+      <p>Try a name (e.g. <em>Mats</em>, <em>Sanna</em>) or ask about money, love, health, crime, politics or work.</p>`;
   }
 
   function addMessage(who, html) {
